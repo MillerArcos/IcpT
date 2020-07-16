@@ -1,10 +1,10 @@
 #ICP
 
-###Comenzar 
+##Comenzar 
 
-_Descargar el archivo zip que contiene un archivo .txt con los datos obtenidos del LiDAR del Turtlebot en una simulación en gazebo._
+_Descargar el archivo zip que contiene un archivo datos.txt con los datos obtenidos del LiDAR del Turtlebot en una simulación en gazebo._
 
-_Descomprimir el archivo .txt en la ubicación deseada._
+_Descomprimir el archivo datos.txt en la ubicación deseada._
 
 _Descargar el script Icp_test.py._
 
