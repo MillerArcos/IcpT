@@ -20,13 +20,13 @@ import os
 import seaborn as sn
 
 path_txt = os.path.join('E:\Descargas','datos.txt')
-data     = pd.read_csv(path_txt,sep='\t',header=None)
+data     = pd.read_csv(path_txt,sep='\t',header=0)
 i=data.fillna(0)
 data_size=data.shape[0]
 data1= np.array(i)
 
 print (data.shape)
-N=640
+N=641
 XYZINrRSaU_1=np.zeros([data_size*N,9])
 XYZINrRSaU_2=np.zeros([data_size*N,9])
 XYZINrRSaU_3=np.zeros([data_size*N,9])
@@ -38,148 +38,20 @@ Ts=1/Fs
 eps=1e-9
 
 
-# def gen(data,echo):
-#     hokuyo_start=7
-#     Number_of_returns=data.iloc[:,hokuyo_start+N*6:hokuyo_start+N*7]
-#     Number_of_returns=Number_of_returns.fillna(-1)
-#     Number_of_returns=np.array(Number_of_returns.values)
-#     scan_angle=data.iloc[:,hokuyo_start+N*7:hokuyo_start+N*8]
-#     scan_angle=np.array(scan_angle.values)
-#     if echo==1:
-#         print("1th echo")
-#         Range       = data.iloc[:,hokuyo_start:hokuyo_start+N]
-#     elif echo==2:
-#         print(".........2th echo")
-#         Range           = data.iloc[:,hokuyo_start+N:hokuyo_start+N*2]
-#     elif echo==3:
-#         print("..................3th echo")
-#         Range       = data.iloc[:,hokuyo_start+N*2:hokuyo_start+N*3]
-#     else:
-#         print("Error")
-#     Range=Range.replace(60,100)
-#     Range=Range.replace(0,100)
-#     Range=np.array(Range)
-#     #np.nan_to_num(0)
-#     #Range=np.nan_to_num(Range)
-#     return (Range)
-
-def proceso(R):
-    global XYZ
-    samples=R.shape[0]*R.shape[1]
-    X=R*np.cos(beta)
-    Y=R*np.sin(beta)
-    input_matrix_k = np.zeros([4,N])
-    input_matrix_k_1 = np.zeros([4,N])
-    L=R.shape[0]  #Total de escaneos
-    L=500      #Final forzado
-    n=1           # Intervalo
-    inicio=3    # escaneo de incio
-    alpha=45*PI/180.0 # Angulo dynamixel
-    Tx1  = 0
-    Ty1  =-0.04980
-    Tz1  = 0.11350
-    # Matriz traslacion:
-    T              = np.array([[1,0,0,Tx1],[0,1,0,Ty1],[0,0,1,Tz1],[0,0,0,1]])
-    Rot            = np.array([[np.cos(alpha), 0, np.sin(alpha), 0], [0,1,0,0], [-np.sin(alpha), 0, np.cos(alpha), 0], [0,0,0,1]])
-    ## ETEST
-    T2             = np.array([[1,0,0,1],[0,1,0,2],[0,0,1,3],[0,0,0,1]])
-    append_matrix  = np.empty([3,N])
-    delta_x=[0]
-    delta_y=[0]
-    delta_z=[0]
-    for k in range(inicio,L,n):
-        input_matrix_k[0,:] = X[k,:]
-        input_matrix_k[1,:] = Y[k,:]
-        input_matrix_k[3,:] = np.ones([1,N])
-        P2_k=np.dot(T,input_matrix_k)
-        P3_k=np.dot(Rot,P2_k)
-        #P3_k=torch.matmul(T2,P3_k)
-        #
-        input_matrix_k_1[0,:] = X[k-1,:]
-        input_matrix_k_1[1,:] = Y[k-1,:]
-        input_matrix_k_1[3,:] = np.ones([1,N])
-        P2_k_1=np.dot(T,input_matrix_k_1)
-        P3_k_1=np.dot(Rot,P2_k_1)
-        T_odom,yaw,pitch,roll=ICP(P3_k,P3_k_1)
-        delta_x.append(float(T_odom[0]))
-        delta_y.append(float(T_odom[1]))
-        delta_z.append(float(T_odom[2]))
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
-    ax.scatter(P3_k[0,:],P3_k[1,:],P3_k[2,:],s=1)
-    ax.scatter(P3_k_1[0,:],P3_k_1[1,:],P3_k_1[2,:],s=1)
-    #ax.scatter(P3_k[0,pk],P3_k[1,pk],P3_k[2,pk],s=10)
-    #ax.scatter(P3_k_1[0,pk_1],P3_k_1[1,pk_1],P3_k_1[2,pk_1],s=10)
-    ax.view_init(elev=0, azim=-90)
-    ax.set_xlabel('X Label')
-    ax.set_ylabel('Y Label')
-    ax.set_zlabel('Z Label')
-    return P3_k, np.array(delta_x), np.array(delta_y), np.array(delta_z)
 
 
 
-def get_geom_feat(X,Y,Z,P):
-    mean_x = np.mean(X)
-    mean_y = np.mean(Y)
-    mean_z = np.mean(Z)
-    X = X.T #- mean_x
-    Y = Y.T #- mean_y
-    Z = Z.T #- mean_z
-    cov_mat = np.cov([X,Y,Z])
-    eig_val_cov, eig_vec_cov = np.linalg.eig(cov_mat)
-    eig_val = np.sort(eig_val_cov)
-    E1 = eig_val[2]
-    E2 = eig_val[1]
-    E3 = eig_val[0]
-    # Anistropy, planarity, sphericity, Lniearity, curvature....
-    # https://www.isprs-ann-photogramm-remote-sens-spatial-inf-sci.net/II-3/9/2014/isprsannals-II-3-9-2014.pdf
-    e1=E1/(E1+E2+E3+eps)
-    e2=E2/(E1+E2+E3+eps)
-    e3=E3/(E1+E2+E3+eps)
-    if(e1>0 and e2>0 and e3>0):
-        p0 = 1.0*(e1-e2)/(e1 + eps)  # Linearity
-        p1 = 1.0*(e2-e3)/(e1 + eps)  # Planarity
-        p2 = 1.0*e3/(e1 + eps)      # Sphericity
-        p3 = 1.0*pow(e1*e3*e3,1/3.0) # Omnivariance
-        p4 = 1.0*(e1-e3)/(e1 + eps)  # Anisotropy
-        p5 = -1.0*( e3*np.log(e3) + e2*np.log(e2) + e1*np.log(e1) ) #Eigenentropy
-        p6 = 1.0*(e1 +e3 + e3)         # sumatory
-        p7 = 1.0*e3/(e1+e2+e3 + eps) #  change of curvature
-        # Calculate of angles
-        mp = np.argmin(eig_val_cov)
-        nx, ny, nz  = eig_vec_cov[:,mp] # https://mediatum.ub.tum.de/doc/800632/800632.pdf
-        phi =abs(np.arctan(nz/(ny+eps)))
-        theta =abs(np.arctan((pow(nz,2)+pow(ny,2))/nx))
-    else:
-        print(X,Y,Z)
-        print(cov_mat)
-        print(P)
-        p0 = float("NaN")
-        p1 = float("NaN")
-        p2 = float("NaN")
-        p3 = float("NaN")
-        p4 = float("NaN")
-        p5 = float("NaN")
-        p6 = float("NaN")
-        p7 = float("NaN")
-        # Calculate of angles
-        mp = float("NaN")
-        phi =float("NaN")
-        theta =float("NaN")
-    descriptors=np.array([p0,p1,p2,p3,p4,p5,p6,p7,phi,theta])
-    #print(descriptors)
-    return descriptors
 
 
-def rotation_matrix(axis, theta):
-    axis = axis/np.sqrt(np.dot(axis, axis))
-    a = np.cos(theta/2.)
-    b, c, d = -axis*np.sin(theta/2.)
-    return np.array([[a*a+b*b-c*c-d*d, 2*(b*c-a*d), 2*(b*d+a*c)],[2*(b*c+a*d), a*a+c*c-b*b-d*d, 2*(c*d-a*b)],[2*(b*d-a*c), 2*(c*d+a*b), a*a+d*d-b*b-c*c]])
+# def rotation_matrix(axis, theta):
+#     axis = axis/np.sqrt(np.dot(axis, axis))
+#     a = np.cos(theta/2.)
+#     b, c, d = -axis*np.sin(theta/2.)
+#     return np.array([[a*a+b*b-c*c-d*d, 2*(b*c-a*d), 2*(b*d+a*c)],[2*(b*c+a*d), a*a+c*c-b*b-d*d, 2*(c*d-a*b)],[2*(b*d-a*c), 2*(c*d+a*b), a*a+d*d-b*b-c*c]])
 
 
-def format_transformation_matrix (T):
-    return ["{},{}".format(i, j) for i, j in T]
+# def format_transformation_matrix (T):
+#     return ["{},{}".format(i, j) for i, j in T]
 
 
 def best_fit_transform(A, B):
@@ -429,15 +301,8 @@ def path_plot(delta_x,delta_y,delta_z,T):
 
 if __name__ == "__main__":
     N=641
-    beta = np.linspace(-29.883638317,30.038820215,N)*-PI/180.0
-    # R1=gen(data,1)
-    # R2=gen(data,2)
-    # R3=gen(data,3)
-    # R=R1+R2+R3
-    # print (R1.shape)
-    # print (R2.shape)
-    # print (R3.shape)
-    ##
+    beta = np.linspace(-29.883638317,30.038820215,N) *-PI/180.0
+
     samples=data1.shape[0]*data1.shape[1]
     X=data1*np.cos(beta)
     Y=data1*np.sin(beta)
@@ -449,12 +314,12 @@ if __name__ == "__main__":
     n=1           # Intervalo
     inicio=1      # escaneo de incio
     alpha=0# Angulo dynamixel
-    Tx1  = 0
-    Ty1  =-0.04980
-    Tz1  = 0.11350
+    # Tx1  = 0
+    # Ty1  = -0.4
+    # Tz1  = 0.3
     # Matriz traslacion:
-    T              = np.array([[1,0,0,Tx1],[0,1,0,Ty1],[0,0,1,Tz1],[0,0,0,1]])
-    Rot            = np.array([[np.cos(alpha), 0, np.sin(alpha), 0], [0,1,0,0], [-np.sin(alpha), 0, np.cos(alpha), 0], [0,0,0,1]])
+    # T              = np.array([[1,0,0,Tx1],[0,1,0,Ty1],[0,0,1,Tz1],[0,0,0,1]])
+    # Rot            = np.array([[np.cos(alpha), 0, np.sin(alpha), 0], [0,1,0,0], [-np.sin(alpha), 0, np.cos(alpha), 0], [0,0,0,1]])
     ## ETEST
     append_matrix  = np.empty([3,N])
     delta_x=[0]
@@ -471,7 +336,12 @@ if __name__ == "__main__":
     sumax=np.array([0])
     Xs=[0]
     Ys=[0]
-    for k in range(n,L,1):
+    Trax=[0]
+    Tray=[0]
+    s= [0]
+    a  = np.array([[0], [0] , [0] , [1]]) 
+    u  = np.array([[0], [0] , [0] , [1]]) 
+    for k in range(n,500,1):
         N=641 
         # v=1
         input_matrix_k[0,:] = X[k,:]
@@ -479,31 +349,16 @@ if __name__ == "__main__":
         input_matrix_k[3,:] = np.ones([1,N])
         #
         #
-        P2_k=np.dot(T,input_matrix_k)
-        P3_k=np.dot(Rot,P2_k)
+        P2_k=input_matrix_k
+        P3_k=P2_k
+        
         #
-        input_matrix_k_1[0,:] = X[k-inc,:]
-        input_matrix_k_1[1,:] = Y[k-inc,:]
+        input_matrix_k_1[0,:] = X[k-1,:]
+        input_matrix_k_1[1,:] = Y[k-1,:]
         input_matrix_k_1[3,:] = np.ones([1,N])
-        P2_k_1=np.dot(T,input_matrix_k_1)
-        P3_k_1=np.dot(Rot,P2_k_1)
-        # if mode == 0:
-            # fig = plt.figure()
-            # 1z3 = np.zeros(461)
-# Agrrgamos un plano 3D
-            # ax = fig.add_subplot(111,projection='3d')
-            # fig = plt.figure()
-            # # ax= fig.add_subplot()
-            # # ax.scatter(X, Y )
-            # # ax.set_xlabel('X Label')
-            # # ax.set_ylabel('Y Label')
-            # # ax.set_zlabel('Z Label')
-            # plt.plot(X,Y, P3_k[2,:])
-            # plt.show()
-            # ax.scatter(X, Y, z3)
+        P2_k_1=input_matrix_k_1
+        P3_k_1=P2_k_1
 
-# Mostramos el gráfico
-            # plt.show()
         if mode==0:
             fig = plt.figure()
             ax = fig.add_subplot(111, projection='3d')
@@ -525,7 +380,24 @@ if __name__ == "__main__":
         delta_pitch.append(pitch)
         delta_roll.append(roll)
         delta_yaw.append(yaw)
-        z= np.zeros(10)
+        # a=u
+        
+        a=np.dot(Transformada , a )
+        
+        # u= np.dot(Transformada, u)
+        
+        sumax= a[0,0]
+        sumay= a[1,0]
+        Trax.append(sumax)
+        Tray.append(sumay)
+        
+        s.append(sumax)
+        # print (s)
+        # equis= sum(sumax)
+        # yes= sum(sumay)
+        # Tray.append(yes)
+        # Trax.append(equis)
+        
         # print (distances)
         # print (delta_yaw)
         
@@ -539,10 +411,10 @@ if __name__ == "__main__":
         # print (Ys)
         # print (sumy)
     print("FINISH")
-    path_plot(delta_x,delta_y,z,Trs)
+    # # path_plot(delta_x,delta_y,z,Trs)
     fig = plt.figure()
     ax= fig.add_subplot()
-    ax.scatter(Xs, Ys )
+    ax.scatter(Trax, Tray )
     ax.set_xlabel('X Label')
     ax.set_ylabel('Y Label')
     plt.show()
