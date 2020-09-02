@@ -19,13 +19,24 @@ except:
 import os
 import seaborn as sn
 
-path_txt = os.path.join('E:\Descargas','datos.txt')
+path_txt = os.path.join('E:\Descargas','Linea_y_giro.txt')
 data     = pd.read_csv(path_txt,sep='\t',header=0)
 i=data.fillna(0)
 data_size=data.shape[0]
+data_size1=data.shape[1]
 data1= np.array(i)
-
-print (data.shape)
+# for k in range (0, data_size):
+#     print (k)
+#     j=0
+#     for j in range (0, data_size1):
+#         valor = data1[k,j]
+#         if str(valor) == 'nan':
+#             valorant= data1[k , j-1]
+#             if valorant >= 0:
+#                 data1[k,j]= valorant 
+#             elif str(data1[k,0]) == 'nan':
+#                 data1[k,0]= data1[0,0]
+# print (data.shape)
 N=641
 XYZINrRSaU_1=np.zeros([data_size*N,9])
 XYZINrRSaU_2=np.zeros([data_size*N,9])
@@ -334,15 +345,20 @@ if __name__ == "__main__":
     new_dst=np.zeros([641,4])
     Trs=np.zeros([4,4,L])
     sumax=np.array([0])
-    Xs=[0]
-    Ys=[0]
-    Trax=[0]
-    Tray=[0]
-    s= [0]
-    a  = np.array([[0], [0] , [0] , [1]]) 
-    u  = np.array([[0], [0] , [0] , [1]]) 
-    for k in range(n,500,1):
+    Xs=[]
+    Ys=[]
+    Trax=[]
+    Tray=[]
+    s= []
+    Trans=[]
+    equis =0
+    yes=0
+    a  = np.array([[1], [1] , [0] , [1]]) 
+    u  = np.array([[0], [0] , [0] , [1]])
+    xy= np.array([[0], [0] , [0] , [1]])
+    for k in range(0,L,1):
         N=641 
+        
         # v=1
         input_matrix_k[0,:] = X[k,:]
         input_matrix_k[1,:] = Y[k,:]
@@ -382,40 +398,41 @@ if __name__ == "__main__":
         delta_yaw.append(yaw)
         # a=u
         
-        a=np.dot(Transformada , a )
+        u=np.dot(Transformada ,u )
         
         # u= np.dot(Transformada, u)
-        
-        sumax= a[0,0]
-        sumay= a[1,0]
+        Trans.append(Transformada)
+        sumax= u[0,0]
+        sumay= u[1,0]
         Trax.append(sumax)
         Tray.append(sumay)
         
-        s.append(sumax)
-        # print (s)
-        # equis= sum(sumax)
-        # yes= sum(sumay)
-        # Tray.append(yes)
-        # Trax.append(equis)
-        
-        # print (distances)
-        # print (delta_yaw)
-        
-        print (k)
         sumx= sum(delta_x)
-        Xs.append(sumx)  
+        Xs.append(sumx)
+        sumy= sum(delta_y)
+        Ys.append(sumy) 
+        print (k)
+        # sumx= sum(sumax)
+        
         # print (Xs)
         # print (sumx)
-        sumy= sum(delta_y)
-        Ys.append(sumy)  
+        # sumy= sum(sumay)
+          
         # print (Ys)
         # print (sumy)
     print("FINISH")
-    # # path_plot(delta_x,delta_y,z,Trs)
-    fig = plt.figure()
-    ax= fig.add_subplot()
+    # path_plot(delta_x,delta_y,z,Trs)
+    fig2 = plt.figure()
+    ax= fig2.add_subplot()
     ax.scatter(Trax, Tray )
     ax.set_xlabel('X Label')
     ax.set_ylabel('Y Label')
     plt.show()
+    fig = plt.figure()
+    ax= fig.add_subplot()
+    ax.scatter(Xs, Ys )
+    ax.set_xlabel('X dLabel')
+    ax.set_ylabel('Y Label')
+    plt.show()
+   
    
